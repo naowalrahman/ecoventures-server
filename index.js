@@ -13,7 +13,11 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 const API_KEY = 'ab2695956bc5adc46b7e6f54f47a9d33'
-const locations = { NY: [40.7128, 74.006] }
+const locations = { NY: [40.7128, 74.0060],
+                    LA: [34.0522, 118.2437],
+                    CHICAGO: [40.7128, 74.0060],
+                    HOUSTON: [29.7604, 95.3698],
+                }
 
 async function getLocationData(lon, lat) {
     const response = await axios(`http://api.openweathermap.org/data/2.5/air_pollution?lon=${lon}&lat=${lat}&appid=${API_KEY}`)
