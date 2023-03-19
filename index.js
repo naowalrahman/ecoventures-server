@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const axios = require('axios')
+require('dotenv').config()
 
 const app = express()
 const port = 3001
@@ -12,7 +13,7 @@ app.use(cors())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
-const API_KEY = 'ab2695956bc5adc46b7e6f54f47a9d33'
+const API_KEY = process.env.OPENWEATHERMAP_API_KEY
 const locations = require("./world_cities.json")
 
 async function getLocationData(lat, lon) {
