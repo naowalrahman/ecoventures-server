@@ -13,19 +13,15 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 const API_KEY = 'ab2695956bc5adc46b7e6f54f47a9d33'
-const locations = { NY: [40.7128, 74.0060],
-                    LA: [34.0522, 118.2437],
-                    CHICAGO: [40.7128, 74.0060],
-                    HOUSTON: [29.7604, 95.3698],
-                }
+const locations = require("./world_cities.json")
 
-async function getLocationData(lon, lat) {
-    const response = await axios(`http://api.openweathermap.org/data/2.5/air_pollution?lon=${lon}&lat=${lat}&appid=${API_KEY}`)
+async function getLocationData(lat, lon) {
+    const response = await axios(`http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
     return response.data
 }
 
 function setupLocationAddresses() {
-    app.get('/location/(:lon)(-(:lat))?', (req, res) => {
+    app.get('/location/:city', (req, res) => {
         let params = req.params
         let dt = new Date()
         dt =
@@ -41,42 +37,48 @@ function setupLocationAddresses() {
             ':' +
             dt.getSeconds()
 
-        let locationData
-        if (params['lat'] == undefined) {
-            locationData = getLocationData(locations[params['lon']][0], locations[params['lon']][1])
-        } else {
-            locationData = getLocationData((params['lon'], params['lat']))
-        }
-
+        let locationData = getLocationData(locations[params.city].lat, locations[params.city].lng)
         locationData.then((locationData) => {
-        console.log(locationData)
+            console.log(locationData)
 
-        res.send({
-            date: dt,
-            aqi: locationData.list[0].main.aqi,
-            gas: locationData.list[0].components,
+            res.send({
+                date: dt,
+                aqi: locationData.list[0].main.aqi,
+                gas: locationData.list[0].components,
+            })
         })
+    })
+
+    app.get('/location/:lat/:lon', (req, res) => {
+        let params = req.params
+        let dt = new Date()
+        dt =
+            dt.getFullYear() +
+            '-' +
+            dt.getMonth() +
+            '-' +
+            dt.getDate() +
+            ', ' +
+            dt.getHours() +
+            ':' +
+            dt.getMinutes() +
+            ':' +
+            dt.getSeconds()
+
+        let locationData = getLocationData(params.lat, params.lon)
+        locationData.then((locationData) => {
+            // console.log(locationData)
+
+            res.send({
+                date: dt,
+                aqi: locationData.list[0].main.aqi,
+                gas: locationData.list[0].components,
+            })
         })
+
     })
 }
 
 setupLocationAddresses()
-// app.get('/details', (req, res) => {
-//     date = new Date()
-//     res.send({
-//         data:
-//             date.getFullYear() +
-//             '-' +
-//             date.getMonth() +
-//             '-' +
-//             date.getDate() +
-//             ', ' +
-//             date.getHours() +
-//             ':' +
-//             date.getMinutes() +
-//             ':' +
-//             date.getSeconds(),
-//     })
-// })
 
 app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
