@@ -1,6 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const axios = require('axios')
 
 const app = express()
 const port = 3001
@@ -14,13 +15,9 @@ app.use(bodyParser.json())
 const API_KEY = 'ab2695956bc5adc46b7e6f54f47a9d33'
 const locations = { NY: [40.7128, 74.006] }
 
-function getLocationData(lon, lat) {
-    let locationData
-    fetch(`http://api.openweathermap.org/data/2.5/air_pollution?lon=${lon}&lat=${lat}&appid=${API_KEY}`)
-        .then((response) => response.json())
-        .then((json) => (locationData = json))
-
-    return locationData
+async function getLocationData(lon, lat) {
+    const response = await axios(`http://api.openweathermap.org/data/2.5/air_pollution?lon=${lon}&lat=${lat}&appid=${API_KEY}`)
+    return response.data
 }
 
 function setupLocationAddresses() {
@@ -47,12 +44,14 @@ function setupLocationAddresses() {
             locationData = getLocationData((params['lon'], params['lat']))
         }
 
+        locationData.then((locationData) => {
         console.log(locationData)
 
         res.send({
             date: dt,
             aqi: locationData.list[0].main.aqi,
             gas: locationData.list[0].components,
+        })
         })
     })
 }
