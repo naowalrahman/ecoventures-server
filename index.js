@@ -81,5 +81,4 @@ function setupLocationAddresses() {
 }
 
 setupLocationAddresses()
-
 app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
