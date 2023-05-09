@@ -21,50 +21,30 @@ async function getLocationData(lat, lon) {
     return response.data
 }
 
-function setupLocationAddresses() {
-    app.get('/location/:city', (req, res) => {
-        let params = req.params
-        let dt = new Date()
-        dt =
-            dt.getFullYear() +
-            '-' +
-            dt.getMonth() +
-            '-' +
-            dt.getDate() +
-            ', ' +
-            dt.getHours() +
-            ':' +
-            dt.getMinutes() +
-            ':' +
-            dt.getSeconds()
+function dateStr() {
+    let dt = new Date()
+    return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+}
 
-        let locationData = getLocationData(locations[params.city].lat, locations[params.city].lng)
-        locationData.then((locationData) => {
-            console.log(locationData)
+/**
+ * @param {JSON object} gases: JSON of the individual gas concentrations
+ */
+function avgGas(gases) {
+    let numerator = 0;
+    let denominator = 0;
 
-            res.send({
-                date: dt,
-                aqi: locationData.list[0].main.aqi,
-                gas: locationData.list[0].components,
-            })
-        })
+    Object.values(gases).forEach((val) => {
+        numerator += val;
+        ++denominator;
     })
 
+    return numerator / denominator;
+}
+
+function setupLocationAddresses() {
     app.get('/location/:lat/:lon', (req, res) => {
         let params = req.params
-        let dt = new Date()
-        dt =
-            dt.getFullYear() +
-            '-' +
-            dt.getMonth() +
-            '-' +
-            dt.getDate() +
-            ', ' +
-            dt.getHours() +
-            ':' +
-            dt.getMinutes() +
-            ':' +
-            dt.getSeconds()
+        let dt = dateStr()
 
         let locationData = getLocationData(params.lat, params.lon)
         locationData.then((locationData) => {
@@ -74,10 +54,17 @@ function setupLocationAddresses() {
                 date: dt,
                 aqi: locationData.list[0].main.aqi,
                 gas: locationData.list[0].components,
+                avgGas: avgGas(locationData.list[0].components)
             })
         })
 
     })
+
+    app.get('/location/:city', (req, res) => {
+        let params = req.params
+        res.redirect(`/location/${locations[params.city].lat}/${locations[params.city].lng}`)
+    })
+
 }
 
 setupLocationAddresses()
