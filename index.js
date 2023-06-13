@@ -1,13 +1,7 @@
-//remember to do npm install mongodb and mongoose and add the password to env
-
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const axios = require('axios')
-const MongoClient = require('mongodb').MongoClient
-const mongo = require('mongodb')
-const mongoose = require('mongoose')
-
 require('dotenv').config()
 
 const app = express()
@@ -27,50 +21,59 @@ async function getLocationData(lat, lon) {
     return response.data
 }
 
-function setupLocationAddresses() {
-    app.get('/location/:city', (req, res) => {
-        let params = req.params
-        let dt = new Date()
-        dt =
-            dt.getFullYear() +
-            '-' +
-            dt.getMonth() +
-            '-' +
-            dt.getDate() +
-            ', ' +
-            dt.getHours() +
-            ':' +
-            dt.getMinutes() +
-            ':' +
-            dt.getSeconds()
+function dateStr() {
+    let dt = new Date()
+    return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+}
 
-        let locationData = getLocationData(locations[params.city].lat, locations[params.city].lng)
-        locationData.then((locationData) => {
-            console.log(locationData)
+/**
+ * @param {JSON object} gases: JSON of the individual gas concentrations
+ */
+function avgGas(gases) {
+    let numerator = 0;
+    let denominator = 0;
 
-            res.send({
-                date: dt,
-                aqi: locationData.list[0].main.aqi,
-                gas: locationData.list[0].components,
-            })
-        })
+    Object.values(gases).forEach((val) => {
+        numerator += val;
+        ++denominator;
     })
 
+    return numerator / denominator;
+}
+function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2-lat1);  // deg2rad below
+    var dLon = deg2rad(lon2-lon1); 
+    var a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+      ; 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    return Math.round(d);
+  }
+  
+  function deg2rad(deg) {
+    return deg * (Math.PI/180)
+  }
+
+  function returnRGB(distance) {
+    const equatedValue = Math.min(distance/35, 510) 
+    const darkFactor = 0.9;
+    const otherValue = 255 * darkFactor;
+    const blueVal = 96 * darkFactor;
+    if (equatedValue<=255) {
+        return `rgba(${equatedValue * 0.5}, ${otherValue}, ${blueVal}, 1)`
+    }
+    else {
+        return `rgba(${otherValue}, ${(510-equatedValue) * 0.5}, ${blueVal}, 1)`
+    }
+}
+function setupLocationAddressesAndDistances() {
     app.get('/location/:lat/:lon', (req, res) => {
         let params = req.params
-        let dt = new Date()
-        dt =
-            dt.getFullYear() +
-            '-' +
-            dt.getMonth() +
-            '-' +
-            dt.getDate() +
-            ', ' +
-            dt.getHours() +
-            ':' +
-            dt.getMinutes() +
-            ':' +
-            dt.getSeconds()
+        let dt = dateStr()
 
         let locationData = getLocationData(params.lat, params.lon)
         locationData.then((locationData) => {
@@ -80,34 +83,93 @@ function setupLocationAddresses() {
                 date: dt,
                 aqi: locationData.list[0].main.aqi,
                 gas: locationData.list[0].components,
+                avgGas: avgGas(locationData.list[0].components)
             })
         })
 
     })
-}
-// this code is being worked on 
-const password = process.env.MONGODB_PASSWORD
-const mongoDBLink = `mongodb+srv://admin:${password}@ecoventures.dfhg2mh.mongodb.net/`
-function doMongo() {
-    console.log("doMongo")
-    mongo.connect(mongoDBLink, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
-    
-        if (err) {
-          console.error('Failed to connect to MongoDB:', err);
-          return;
-        }
-        else {
-            console.log("hello");
-            return;
-        }
+
+    app.get('/location/:city', (req, res) => {
+        let params = req.params
+        res.redirect(`/location/${locations[params.city].lat}/${locations[params.city].lng}`)
     })
+    // distance + color stuff
+    app.get('/location/:homeCity-:otherCity', (req, res) => {
+        let params = req.params
+        lat1 = locations[params.homeCity].lat
+        lon1 = locations[params.homeCity].lng
+        lat2 = locations[params.otherCity].lat
+        lon2 = locations[params.otherCity].lng
+        
+        let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2)
+        res.send({
+            distance: distanceMeasured,
+            rgb: returnRGB(distanceMeasured)
+        })
+    })
+
+    app.get('/allDistance/:cityName', (req, res) => {
+        let params = req.params
+        let lat1 = locations[params.cityName]["lat"]
+        let lon1 = locations[params.cityName]["lng"]
+        distColorList = []
+        for (let property in locations) {
+            let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, locations[property]["lat"], locations[property]["lng"])
+            distColorList.push([property, distanceMeasured, returnRGB(distanceMeasured)])
+        }
+        res.send({
+            dcList: distColorList
+        })
+    })
+
 }
 
 
+// this code is being worked on -------------------------------------
+
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const password = process.env.MONGODB_PASSWORD;
+const uri = `mongodb+srv://admin:${password}@ecoventures.dfhg2mh.mongodb.net/?retryWrites=true&w=majority`;
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
 
 
-setupLocationAddresses()
-doMongo();
+async function createReview(collection, location, user, reviewText) {
+  
+}
+
+async function run() {
+  try {
+    // Connect the client to the server	(optional starting in v4.7)
+    const con = await client.connect();
+    // Send a ping to confirm a successful connection
+    const orangeCollection = con.db("Test").collection("Oranges")
+    //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
+    let variable = await orangeCollection.find().toArray();
+    
+    await orangeCollection.deleteMany({})
+    variable = await orangeCollection.find().toArray();
+    console.log(variable)
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    con.close();
+  } finally {
+    // Ensures that the client will close when you finish/error (now in the beginning try since i set client.connect to a variable 
+    // called con that i can recall)
+    console.log("disconnect")
+  }
+}
+
+setupLocationAddressesAndDistances()
+
+run().catch(console.dir);
+
 
 app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
 
