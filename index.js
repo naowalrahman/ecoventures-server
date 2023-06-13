@@ -23,7 +23,7 @@ async function getLocationData(lat, lon) {
 
 function dateStr() {
     let dt = new Date()
-    return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+    return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 }
 
 /**
@@ -40,34 +40,34 @@ function avgGas(gases) {
 
     return numerator / denominator;
 }
-function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2-lat1);  // deg2rad below
-    var dLon = deg2rad(lon2-lon1); 
-    var a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-      ; 
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    var dLon = deg2rad(lon2 - lon1);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c; // Distance in km
     return Math.round(d);
-  }
-  
-  function deg2rad(deg) {
-    return deg * (Math.PI/180)
-  }
+}
 
-  function returnRGB(distance) {
-    const equatedValue = Math.min(distance/35, 510) 
+function deg2rad(deg) {
+    return deg * (Math.PI / 180)
+}
+
+function returnRGB(distance) {
+    const equatedValue = Math.min(distance / 35, 510)
     const darkFactor = 0.9;
     const otherValue = 255 * darkFactor;
     const blueVal = 96 * darkFactor;
-    if (equatedValue<=255) {
+    if (equatedValue <= 255) {
         return `rgba(${equatedValue * 0.5}, ${otherValue}, ${blueVal}, 1)`
     }
     else {
-        return `rgba(${otherValue}, ${(510-equatedValue) * 0.5}, ${blueVal}, 1)`
+        return `rgba(${otherValue}, ${(510 - equatedValue) * 0.5}, ${blueVal}, 1)`
     }
 }
 function setupLocationAddressesAndDistances() {
@@ -100,7 +100,7 @@ function setupLocationAddressesAndDistances() {
         lon1 = locations[params.homeCity].lng
         lat2 = locations[params.otherCity].lat
         lon2 = locations[params.otherCity].lng
-        
+
         let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2)
         res.send({
             distance: distanceMeasured,
@@ -109,7 +109,7 @@ function setupLocationAddressesAndDistances() {
     })
 
     app.get('/allDistance/:cityName', (req, res) => {
-        let params = req.params
+        let params = req.paramscon.db("Test").collection("Oranges");
         let lat1 = locations[params.cityName]["lat"]
         let lon1 = locations[params.cityName]["lng"]
         distColorList = []
@@ -128,114 +128,64 @@ function setupLocationAddressesAndDistances() {
 // this code is being worked on -------------------------------------
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const password = process.env.MONGODB_PASSWORD;
-const uri = `mongodb+srv://admin:${password}@ecoventures.dfhg2mh.mongodb.net/?retryWrites=true&w=majority`;
+const password = process.env.MONGODB_PASSWORD
+const uri = process.env.ATLAS_URI
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
 
-
+/**
+ * 
+ * @param {Collection<Document>} collection 
+ * @param {String} location 
+ * @param {String} user 
+ * @param {String} reviewText 
+ * @returns {InsertOneResult<Document>}
+ * NOTE: con.db("Test").collection("Oranges") is how to do collection
+ */
 async function createReview(collection, location, user, reviewText) {
-  
+    return await collection.insertOne({
+        "location": location,
+        "user": user,
+        "review": reviewText
+    });
 }
 
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    const con = await client.connect();
-    // Send a ping to confirm a successful connection
-    const orangeCollection = con.db("Test").collection("Oranges")
-    //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
-    let variable = await orangeCollection.find().toArray();
-    
-    await orangeCollection.deleteMany({})
-    variable = await orangeCollection.find().toArray();
-    console.log(variable)
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    con.close();
-  } finally {
-    // Ensures that the client will close when you finish/error (now in the beginning try since i set client.connect to a variable 
-    // called con that i can recall)
-    console.log("disconnect")
-  }
-}
+// function testDB() {
+//     app.post('/mongo', (req, res) => {
+//         (async () => {
+//             // Connect the client to the server	(optional starting in v4.7)
+//             const con = await client.connect();
+//             // Send a ping to confirm a successful connection
+//             const orangeCollection = con.db("Test").collection("Oranges");
+//             //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
+//             // let variable = await orangeCollection.find().toArray();
+
+//             await orangeCollection.insertOne({ "tawseef": "rezahome" });
+
+//             // await orangeCollection.deleteMany({})
+//             variable = await orangeCollection.find().toArray();
+//             console.log(variable);
+//             return variable;
+//         }).then((variable) => {
+//             res.send(variable)
+//         })
+//     })
+
+//     fetch('https://4014-2600-4040-96f2-fb00-30e9-2d19-20fb-ff44.ngrok-free.app/mongo', { method: 'POST' }).then((res) => {
+//         console.log(true)
+//     })
+// }
+// testDB();
 
 setupLocationAddressesAndDistances()
-
-run().catch(console.dir);
 
 
 app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
 
-
-/* extra notes
-// To connect with your mongoDB database
-const mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost:27017/', {
-	dbName: 'yourDB-name',
-	useNewUrlParser: true,
-	useUnifiedTopology: true
-}, err => err ? console.log(err) :
-	console.log('Connected to yourDB-name database'));
-
-// Schema for users of app
-const UserSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		required: true,
-	},
-	email: {
-		type: String,
-		required: true,
-		unique: true,
-	},
-	date: {
-		type: Date,
-		default: Date.now,
-	},
-});
-const User = mongoose.model('users', UserSchema);
-User.createIndexes();
-
-// For backend and express
-const express = require('express');
-const app = express();
-const cors = require("cors");
-console.log("App listen at port 5000");
-app.use(express.json());
-app.use(cors());
-app.get("/", (req, resp) => {
-
-	resp.send("App is Working");
-	// You can check backend is working or not by
-	// entering http://loacalhost:5000
-	
-	// If you see App is working means
-	// backend working properly
-});
-
-app.post("/register", async (req, resp) => {
-	try {
-		const user = new User(req.body);
-		let result = await user.save();
-		result = result.toObject();
-		if (result) {
-			delete result.password;
-			resp.send(req.body);
-			console.log(result);
-		} else {
-			console.log("User already register");
-		}
-
-	} catch (e) {
-		resp.send("Something Went Wrong");
-	}
-});
-app.listen(5000);
-*/
