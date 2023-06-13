@@ -1,4 +1,4 @@
-// remember to do npm install mongodb and mongoose and add the password to env
+//remember to do npm install mongodb and mongoose and add the password to env
 
 const express = require('express')
 const bodyParser = require('body-parser')
