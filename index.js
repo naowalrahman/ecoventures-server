@@ -141,7 +141,6 @@ const client = new MongoClient(uri, {
 });
 
 /**
- * 
  * @param {Collection<Document>} collection 
  * @param {String} location 
  * @param {String} user 
@@ -157,32 +156,32 @@ async function createReview(collection, location, user, reviewText) {
     });
 }
 
-// function testDB() {
-//     app.post('/mongo', (req, res) => {
-//         (async () => {
-//             // Connect the client to the server	(optional starting in v4.7)
-//             const con = await client.connect();
-//             // Send a ping to confirm a successful connection
-//             const orangeCollection = con.db("Test").collection("Oranges");
-//             //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
-//             // let variable = await orangeCollection.find().toArray();
+function testDB() {
+    app.post('/mongo', (req, res) => {
+        (async () => {
+            // Connect the client to the server	(optional starting in v4.7)
+            const con = await client.connect();
+            // Send a ping to confirm a successful connection
+            const orangeCollection = con.db("Test").collection("Oranges");
+            //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
+            // let variable = await orangeCollection.find().toArray();
 
-//             await orangeCollection.insertOne({ "tawseef": "rezahome" });
+            await orangeCollection.insertOne({ "tawseef": "rezahome" });
 
-//             // await orangeCollection.deleteMany({})
-//             variable = await orangeCollection.find().toArray();
-//             console.log(variable);
-//             return variable;
-//         }).then((variable) => {
-//             res.send(variable)
-//         })
-//     })
+            // await orangeCollection.deleteMany({})
+            variable = await orangeCollection.find().toArray();
+            console.log(variable);
+            return variable;
+        })().then((variable) => {
+            res.send(variable)
+        })
+    })
 
-//     fetch('https://4014-2600-4040-96f2-fb00-30e9-2d19-20fb-ff44.ngrok-free.app/mongo', { method: 'POST' }).then((res) => {
-//         console.log(true)
-//     })
-// }
-// testDB();
+    fetch('http://localhost:3001/mongo', { method: 'POST' }).then((res) => {
+        console.log(true)
+    })
+}
+testDB();
 
 setupLocationAddressesAndDistances()
 
