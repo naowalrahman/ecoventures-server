@@ -26,6 +26,10 @@ function dateStr() {
     return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 }
 
+function dateToString(dt) {
+    return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+}
+
 /**
  * @param {JSON object} gases: JSON of the individual gas concentrations
  */
@@ -148,39 +152,58 @@ const client = new MongoClient(uri, {
  * @returns {InsertOneResult<Document>}
  * NOTE: con.db("Test").collection("Oranges") is how to do collection
  */
-async function createReview(collection, location, user, reviewText) {
+async function createReview(collection, location, user, reviewText, timeSubmitted) {
     return await collection.insertOne({
+        "timeSubmitted": timeSubmitted,
         "location": location,
         "user": user,
         "review": reviewText
     });
 }
 
-function testDB() {
-    app.post('/mongo', (req, res) => {
-        (async () => {
+async function testDB() {
+    // app.post('/mongo', (req, res) => {
+    //     (async () => {
             // Connect the client to the server	(optional starting in v4.7)
+            
             const con = await client.connect();
-            // Send a ping to confirm a successful connection
             const orangeCollection = con.db("Test").collection("Oranges");
-            //await client.db("Test").collection("Oranges").insertOne({"testWord": "rabbit"});
-            // let variable = await orangeCollection.find().toArray();
-
-            await orangeCollection.insertOne({ "tawseef": "rezahome" });
-
-            // await orangeCollection.deleteMany({})
+            //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            // (DANGEROUS CODE, UN COMMENTING CREATES 39000+ CITIES ADDED ) -------------------------
+            // iterator = 1;
+            // console.log(Object.keys(locations).length); //39187
+            // for (property in locations) {
+            //     await createReview(orangeCollection, property, "Admin", "Test Review", new Date())
+            //     console.log(iterator + " review created");
+            //     iterator++;
+            // }
+            // (DANGEROUS CODE, UN COMMETING DELETES ALL THINGS -------------------------
+            //await orangeCollection.deleteMany({})
+            //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            
+            // CREATES INDEX
+            //await orangeCollection.createIndex({ location: 1 });
+            //console.log("Index creation successful!");
             variable = await orangeCollection.find().toArray();
             console.log(variable);
             return variable;
-        })().then((variable) => {
-            res.send(variable)
-        })
-    })
-
-    fetch('http://localhost:3001/mongo', { method: 'POST' }).then((res) => {
-        console.log(true)
-    })
+    //     })().then((variable) => {
+    //         res.send(variable)
+    //     })
+    // })
+    /*
+    fetch('http://localhost:3001/mongo', { method: 'POST' })
+    .then((res) => res.json())
+    .then(json => {console.log(json)}
+    )
+    */
+    
 }
+
+async function editDBOnce() {
+    
+}
+
 testDB();
 
 setupLocationAddressesAndDistances()
