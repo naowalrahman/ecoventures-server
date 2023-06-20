@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const axios = require('axios')
+const stringSimilarity = require('string-similarity')
 require('dotenv').config()
 
 const app = express()
@@ -111,20 +112,71 @@ function setupLocationAddressesAndDistances() {
             rgb: returnRGB(distanceMeasured)
         })
     })
-
-    app.get('/allDistance/:cityName', (req, res) => {
-        let params = req.paramscon.db("Test").collection("Oranges");
+   // :type|:input
+    app.get('/allDistance/:cityName&:type&:input', (req, res) => {
+        console.log(req.params.cityName + " --- " + req.params.type);
+        let params = req.params;
         let lat1 = locations[params.cityName]["lat"]
         let lon1 = locations[params.cityName]["lng"]
         distColorList = []
+        
         for (let property in locations) {
+
+            let countryLinkClass;
+            let countryTextClass;
+            countryLinkClass = `${locations[property]["country"]}-country`
+                .replace(/ /g, '')
+                .replace(/\(/g, '')
+                .replace(/\)/g, '')
+                .replace(/'/g, '')
+                .replace(/\./g, '')
+                .replace(/,/g, '');
+
+            countryTextClass = `${locations[property]["country"]}-text`
+                .replace(/ /g, '')
+                .replace(/\(/g, '')
+                .replace(/\)/g, '')
+                .replace(/'/g, '')
+                .replace(/,/g, '');
+
             let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, locations[property]["lat"], locations[property]["lng"])
-            distColorList.push([property, distanceMeasured, returnRGB(distanceMeasured)])
+            distColorList.push([property, 0, locations[property]["country"], distanceMeasured, returnRGB(distanceMeasured), countryLinkClass, countryTextClass])
         }
+        switch (params.type) {
+            case "closest":
+                distColorList.sort((a, b) => {
+                    return a[3] - b[3]
+                })
+                console.log("fetched");
+                break;
+            case "farthest":
+                distColorList.sort((a, b) => {
+                    return b[3] - a[3]
+                })
+                break;
+            case "country":
+                distColorList = distColorList.map((item) => {
+                    return [item[0], stringSimilarity.compareTwoStrings(params.input.toLowerCase(), item[2].toLowerCase()), item[2], item[3], item[4], item[5], item[6]];
+                }).sort((a, b) => {
+                    return b[1] - a[1]
+                })
+                break;
+            case "city":
+                distColorList = distColorList.map((item) => {
+                    return [item[0], stringSimilarity.compareTwoStrings(params.input.toLowerCase(), item[0].toLowerCase()), item[2], item[3], item[4], item[5], item[6]];
+                }).sort((a, b) => {
+                    return b[1] - a[1]
+                })
+                break;
+        }
+        
+        
         res.send({
             dcList: distColorList
         })
     })
+
+
 
 }
 
@@ -161,50 +213,50 @@ async function createReview(collection, location, user, reviewText, timeSubmitte
     });
 }
 
-async function testDB() {
-    // app.post('/mongo', (req, res) => {
-    //     (async () => {
-            // Connect the client to the server	(optional starting in v4.7)
+// async function testDB() {
+//     // app.post('/mongo', (req, res) => {
+//     //     (async () => {
+//             // Connect the client to the server	(optional starting in v4.7)
             
-            const con = await client.connect();
-            const orangeCollection = con.db("Test").collection("Oranges");
-            //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-            // (DANGEROUS CODE, UN COMMENTING CREATES 39000+ CITIES ADDED ) -------------------------
-            // iterator = 1;
-            // console.log(Object.keys(locations).length); //39187
-            // for (property in locations) {
-            //     await createReview(orangeCollection, property, "Admin", "Test Review", new Date())
-            //     console.log(iterator + " review created");
-            //     iterator++;
-            // }
-            // (DANGEROUS CODE, UN COMMETING DELETES ALL THINGS -------------------------
-            //await orangeCollection.deleteMany({})
-            //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+//             const con = await client.connect();
+//             const orangeCollection = con.db("Test").collection("Oranges");
+//             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+//             // (DANGEROUS CODE, UN COMMENTING CREATES 39000+ CITIES ADDED ) -------------------------
+//             // iterator = 1;
+//             // console.log(Object.keys(locations).length); //39187
+//             // for (property in locations) {
+//             //     await createReview(orangeCollection, property, "Admin", "Test Review", new Date())
+//             //     console.log(iterator + " review created");
+//             //     iterator++;
+//             // }
+//             // (DANGEROUS CODE, UN COMMETING DELETES ALL THINGS -------------------------
+//             //await orangeCollection.deleteMany({})
+//             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
-            // CREATES INDEX
-            //await orangeCollection.createIndex({ location: 1 });
-            //console.log("Index creation successful!");
-            variable = await orangeCollection.find().toArray();
-            console.log(variable);
-            return variable;
-    //     })().then((variable) => {
-    //         res.send(variable)
-    //     })
-    // })
-    /*
-    fetch('http://localhost:3001/mongo', { method: 'POST' })
-    .then((res) => res.json())
-    .then(json => {console.log(json)}
-    )
-    */
+//             // CREATES INDEX
+//             //await orangeCollection.createIndex({ location: 1 });
+//             //console.log("Index creation successful!");
+//             variable = await orangeCollection.find().toArray();
+//             console.log(variable);
+//             return variable;
+//     //     })().then((variable) => {
+//     //         res.send(variable)
+//     //     })
+//     // })
+//     /*
+//     fetch('http://localhost:3001/mongo', { method: 'POST' })
+//     .then((res) => res.json())
+//     .then(json => {console.log(json)}
+//     )
+//     */
     
-}
+// }
 
 async function editDBOnce() {
     
 }
 
-testDB();
+//testDB();
 
 setupLocationAddressesAndDistances()
 
