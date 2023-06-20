@@ -45,6 +45,7 @@ function avgGas(gases) {
 
     return numerator / denominator;
 }
+
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     var R = 6371; // Radius of the earth in km
     var dLat = deg2rad(lat2 - lat1);  // deg2rad below
@@ -75,6 +76,7 @@ function returnRGB(distance) {
         return `rgba(${otherValue}, ${(510 - equatedValue) * 0.5}, ${blueVal}, 1)`
     }
 }
+
 function setupLocationAddressesAndDistances() {
     app.get('/location/:lat/:lon', (req, res) => {
         let params = req.params
@@ -112,14 +114,14 @@ function setupLocationAddressesAndDistances() {
             rgb: returnRGB(distanceMeasured)
         })
     })
-   // :type|:input
+    // :type|:input
     app.get('/allDistance/:cityName&:type&:input', (req, res) => {
         console.log(req.params.cityName + " --- " + req.params.type);
         let params = req.params;
         let lat1 = locations[params.cityName]["lat"]
         let lon1 = locations[params.cityName]["lng"]
         distColorList = []
-        
+
         for (let property in locations) {
 
             let countryLinkClass;
@@ -169,8 +171,8 @@ function setupLocationAddressesAndDistances() {
                 })
                 break;
         }
-        
-        
+
+
         res.send({
             dcList: distColorList
         })
@@ -204,20 +206,30 @@ const client = new MongoClient(uri, {
  * @returns {InsertOneResult<Document>}
  * NOTE: con.db("Test").collection("Oranges") is how to do collection
  */
-async function createReview(collection, location, user, reviewText, timeSubmitted) {
+async function createReview(collection, location, user, reviewText) {
     return await collection.insertOne({
-        "timeSubmitted": timeSubmitted,
+        "timeSubmitted": new Date(),
         "location": location,
         "user": user,
         "review": reviewText
     });
 }
 
+function setupReviewAddress() {
+    app.post('/submitreview/:location/:user/:review', (req, res) => {
+        (async () => {
+            const { location, user, review } = req.params
+            await createReview(client.db("Test").collection("Oranges"), location, user, review)
+            res.send("Review submitted")
+        })()
+    })
+}
+
 // async function testDB() {
 //     // app.post('/mongo', (req, res) => {
 //     //     (async () => {
 //             // Connect the client to the server	(optional starting in v4.7)
-            
+
 //             const con = await client.connect();
 //             const orangeCollection = con.db("Test").collection("Oranges");
 //             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -232,7 +244,7 @@ async function createReview(collection, location, user, reviewText, timeSubmitte
 //             // (DANGEROUS CODE, UN COMMETING DELETES ALL THINGS -------------------------
 //             //await orangeCollection.deleteMany({})
 //             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-            
+
 //             // CREATES INDEX
 //             //await orangeCollection.createIndex({ location: 1 });
 //             //console.log("Index creation successful!");
@@ -249,17 +261,19 @@ async function createReview(collection, location, user, reviewText, timeSubmitte
 //     .then(json => {console.log(json)}
 //     )
 //     */
-    
 // }
-
-async function editDBOnce() {
-    
-}
-
 //testDB();
 
-setupLocationAddressesAndDistances()
+setupLocationAddressesAndDistances();
+setupReviewAddress();
+
+// test review submission
+// (async () => {
+//     await fetch('http://localhost:3001/submitreview/Tokyo/Beanbag/awesome', { method: 'POST' })
+//     variable = await client.db("Test").collection("Oranges").find({ location: 'Tokyo' }).toArray()
+//     console.log(variable)
+// })()
+// client.db("Test").collection("Oranges").deleteMany({ user: 'Beanbag' })
 
 
-app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
-
+app.listen(port, () => console.log(`App listening on port ${port}!`))
