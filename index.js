@@ -27,9 +27,6 @@ function dateStr() {
     return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 }
 
-function dateToString(dt) {
-    return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
-}
 
 /**
  * @param {JSON object} gases: JSON of the individual gas concentrations
