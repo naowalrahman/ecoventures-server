@@ -116,7 +116,6 @@ function setupLocationAddressesAndDistances() {
     })
     // :type|:input
     app.get('/allDistance/:cityName&:type&:input', (req, res) => {
-        console.log(req.params.cityName + " --- " + req.params.type);
         let params = req.params;
         let lat1 = locations[params.cityName]["lat"]
         let lon1 = locations[params.cityName]["lng"]
@@ -149,7 +148,6 @@ function setupLocationAddressesAndDistances() {
                 distColorList.sort((a, b) => {
                     return a[3] - b[3]
                 })
-                console.log("fetched");
                 break;
             case "farthest":
                 distColorList.sort((a, b) => {
@@ -183,47 +181,47 @@ function setupLocationAddressesAndDistances() {
 }
 
 
-// this code is being worked on -------------------------------------
+// // this code is being worked on -------------------------------------
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const password = process.env.MONGODB_PASSWORD
-const uri = process.env.ATLAS_URI
+// const { MongoClient, ServerApiVersion } = require('mongodb');
+// const password = process.env.MONGODB_PASSWORD
+// const uri = process.env.ATLAS_URI
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+// // Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// const client = new MongoClient(uri, {
+//     serverApi: {
+//         version: ServerApiVersion.v1,
+//         strict: true,
+//         deprecationErrors: true,
+//     }
+// });
 
-/**
- * @param {Collection<Document>} collection 
- * @param {String} location 
- * @param {String} user 
- * @param {String} reviewText 
- * @returns {InsertOneResult<Document>}
- * NOTE: con.db("Test").collection("Oranges") is how to do collection
- */
-async function createReview(collection, location, user, reviewText) {
-    return await collection.insertOne({
-        "timeSubmitted": new Date(),
-        "location": location,
-        "user": user,
-        "review": reviewText
-    });
-}
+// /**
+//  * @param {Collection<Document>} collection 
+//  * @param {String} location 
+//  * @param {String} user 
+//  * @param {String} reviewText 
+//  * @returns {InsertOneResult<Document>}
+//  * NOTE: con.db("Test").collection("Oranges") is how to do collection
+//  */
+// async function createReview(collection, location, user, reviewText) {
+//     return await collection.insertOne({
+//         "timeSubmitted": new Date(),
+//         "location": location,
+//         "user": user,
+//         "review": reviewText
+//     });
+// }
 
-function setupReviewAddress() {
-    app.post('/submitreview/:location/:user/:review', (req, res) => {
-        (async () => {
-            const { location, user, review } = req.params
-            await createReview(client.db("Test").collection("Oranges"), location, user, review)
-            res.send("Review submitted")
-        })()
-    })
-}
+// function setupReviewAddress() {
+//     app.post('/submitreview/:location/:user/:review', (req, res) => {
+//         (async () => {
+//             const { location, user, review } = req.params
+//             await createReview(client.db("Test").collection("Oranges"), location, user, review)
+//             res.send("Review submitted")
+//         })()
+//     })
+// }
 
 // async function testDB() {
 //     // app.post('/mongo', (req, res) => {
@@ -265,7 +263,7 @@ function setupReviewAddress() {
 //testDB();
 
 setupLocationAddressesAndDistances();
-setupReviewAddress();
+// setupReviewAddress();
 
 // test review submission
 // (async () => {
