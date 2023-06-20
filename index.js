@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const axios = require('axios')
+const stringSimilarity = require('string-similarity')
 require('dotenv').config()
 
 const app = express()
@@ -23,8 +24,9 @@ async function getLocationData(lat, lon) {
 
 function dateStr() {
     let dt = new Date()
-    return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+    return `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}, ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 }
+
 
 /**
  * @param {JSON object} gases: JSON of the individual gas concentrations
@@ -40,36 +42,38 @@ function avgGas(gases) {
 
     return numerator / denominator;
 }
-function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
     var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2-lat1);  // deg2rad below
-    var dLon = deg2rad(lon2-lon1); 
-    var a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-      ; 
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    var dLon = deg2rad(lon2 - lon1);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c; // Distance in km
     return Math.round(d);
-  }
-  
-  function deg2rad(deg) {
-    return deg * (Math.PI/180)
-  }
+}
 
-  function returnRGB(distance) {
-    const equatedValue = Math.min(distance/35, 510) 
+function deg2rad(deg) {
+    return deg * (Math.PI / 180)
+}
+
+function returnRGB(distance) {
+    const equatedValue = Math.min(distance / 35, 510)
     const darkFactor = 0.9;
     const otherValue = 255 * darkFactor;
     const blueVal = 96 * darkFactor;
-    if (equatedValue<=255) {
+    if (equatedValue <= 255) {
         return `rgba(${equatedValue * 0.5}, ${otherValue}, ${blueVal}, 1)`
     }
     else {
-        return `rgba(${otherValue}, ${(510-equatedValue) * 0.5}, ${blueVal}, 1)`
+        return `rgba(${otherValue}, ${(510 - equatedValue) * 0.5}, ${blueVal}, 1)`
     }
 }
+
 function setupLocationAddressesAndDistances() {
     app.get('/location/:lat/:lon', (req, res) => {
         let params = req.params
@@ -100,29 +104,171 @@ function setupLocationAddressesAndDistances() {
         lon1 = locations[params.homeCity].lng
         lat2 = locations[params.otherCity].lat
         lon2 = locations[params.otherCity].lng
-        
+
         let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2)
         res.send({
             distance: distanceMeasured,
             rgb: returnRGB(distanceMeasured)
         })
     })
-
-    app.get('/allDistance/:cityName', (req, res) => {
-        let params = req.params
+    // :type|:input
+    app.get('/allDistance/:cityName&:type&:input', (req, res) => {
+        let params = req.params;
         let lat1 = locations[params.cityName]["lat"]
         let lon1 = locations[params.cityName]["lng"]
         distColorList = []
+
         for (let property in locations) {
+
+            let countryLinkClass;
+            let countryTextClass;
+            countryLinkClass = `${locations[property]["country"]}-country`
+                .replace(/ /g, '')
+                .replace(/\(/g, '')
+                .replace(/\)/g, '')
+                .replace(/'/g, '')
+                .replace(/\./g, '')
+                .replace(/,/g, '');
+
+            countryTextClass = `${locations[property]["country"]}-text`
+                .replace(/ /g, '')
+                .replace(/\(/g, '')
+                .replace(/\)/g, '')
+                .replace(/'/g, '')
+                .replace(/,/g, '');
+
             let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, locations[property]["lat"], locations[property]["lng"])
-            distColorList.push([property, distanceMeasured, returnRGB(distanceMeasured)])
+            distColorList.push([property, 0, locations[property]["country"], distanceMeasured, returnRGB(distanceMeasured), countryLinkClass, countryTextClass])
         }
+        switch (params.type) {
+            case "closest":
+                distColorList.sort((a, b) => {
+                    return a[3] - b[3]
+                })
+                break;
+            case "farthest":
+                distColorList.sort((a, b) => {
+                    return b[3] - a[3]
+                })
+                break;
+            case "country":
+                distColorList = distColorList.map((item) => {
+                    return [item[0], stringSimilarity.compareTwoStrings(params.input.toLowerCase(), item[2].toLowerCase()), item[2], item[3], item[4], item[5], item[6]];
+                }).sort((a, b) => {
+                    return b[1] - a[1]
+                })
+                break;
+            case "city":
+                distColorList = distColorList.map((item) => {
+                    return [item[0], stringSimilarity.compareTwoStrings(params.input.toLowerCase(), item[0].toLowerCase()), item[2], item[3], item[4], item[5], item[6]];
+                }).sort((a, b) => {
+                    return b[1] - a[1]
+                })
+                break;
+        }
+
+
         res.send({
             dcList: distColorList
         })
     })
 
+
+
 }
 
-setupLocationAddressesAndDistances()
-app.listen(port, () => console.log(`Hello world app listening on port ${port}!`))
+
+// // this code is being worked on -------------------------------------
+
+// const { MongoClient, ServerApiVersion } = require('mongodb');
+// const password = process.env.MONGODB_PASSWORD
+// const uri = process.env.ATLAS_URI
+
+// // Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// const client = new MongoClient(uri, {
+//     serverApi: {
+//         version: ServerApiVersion.v1,
+//         strict: true,
+//         deprecationErrors: true,
+//     }
+// });
+
+// /**
+//  * @param {Collection<Document>} collection 
+//  * @param {String} location 
+//  * @param {String} user 
+//  * @param {String} reviewText 
+//  * @returns {InsertOneResult<Document>}
+//  * NOTE: con.db("Test").collection("Oranges") is how to do collection
+//  */
+// async function createReview(collection, location, user, reviewText) {
+//     return await collection.insertOne({
+//         "timeSubmitted": new Date(),
+//         "location": location,
+//         "user": user,
+//         "review": reviewText
+//     });
+// }
+
+// function setupReviewAddress() {
+//     app.post('/submitreview/:location/:user/:review', (req, res) => {
+//         (async () => {
+//             const { location, user, review } = req.params
+//             await createReview(client.db("Test").collection("Oranges"), location, user, review)
+//             res.send("Review submitted")
+//         })()
+//     })
+// }
+
+// async function testDB() {
+//     // app.post('/mongo', (req, res) => {
+//     //     (async () => {
+//             // Connect the client to the server	(optional starting in v4.7)
+
+//             const con = await client.connect();
+//             const orangeCollection = con.db("Test").collection("Oranges");
+//             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+//             // (DANGEROUS CODE, UN COMMENTING CREATES 39000+ CITIES ADDED ) -------------------------
+//             // iterator = 1;
+//             // console.log(Object.keys(locations).length); //39187
+//             // for (property in locations) {
+//             //     await createReview(orangeCollection, property, "Admin", "Test Review", new Date())
+//             //     console.log(iterator + " review created");
+//             //     iterator++;
+//             // }
+//             // (DANGEROUS CODE, UN COMMETING DELETES ALL THINGS -------------------------
+//             //await orangeCollection.deleteMany({})
+//             //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+//             // CREATES INDEX
+//             //await orangeCollection.createIndex({ location: 1 });
+//             //console.log("Index creation successful!");
+//             variable = await orangeCollection.find().toArray();
+//             console.log(variable);
+//             return variable;
+//     //     })().then((variable) => {
+//     //         res.send(variable)
+//     //     })
+//     // })
+//     /*
+//     fetch('http://localhost:3001/mongo', { method: 'POST' })
+//     .then((res) => res.json())
+//     .then(json => {console.log(json)}
+//     )
+//     */
+// }
+//testDB();
+
+setupLocationAddressesAndDistances();
+// setupReviewAddress();
+
+// test review submission
+// (async () => {
+//     await fetch('http://localhost:3001/submitreview/Tokyo/Beanbag/awesome', { method: 'POST' })
+//     variable = await client.db("Test").collection("Oranges").find({ location: 'Tokyo' }).toArray()
+//     console.log(variable)
+// })()
+// client.db("Test").collection("Oranges").deleteMany({ user: 'Beanbag' })
+
+
+app.listen(port, () => console.log(`App listening on port ${port}!`))
