@@ -293,11 +293,7 @@ function getReviewData() {
 //   */
 // }
 //testDB();
-(async() => {
-  console.log("ran");
-  const variable = await client.db("Test").collection("Reviews").find({"timeSubmitted": {$regex : "2023-06-21"}}).toArray()
-  console.log(variable);
-})()
+
 setupLocationAddressesAndDistances();
 setupReviewAddress();
 getReviewData();
