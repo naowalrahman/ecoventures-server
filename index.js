@@ -8,7 +8,14 @@ require('dotenv').config()
 const app = express()
 const port = 3001
 
-app.use(cors())
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+})
 
 // Configuring body parser middleware
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -97,20 +104,20 @@ function setupLocationAddressesAndDistances() {
     let params = req.params
     res.redirect(`/location/${locations[params.city].lat}/${locations[params.city].lng}`)
   })
-  // // distance + color stuff
-  // app.get('/location/:homeCity-:otherCity', (req, res) => {
-  //   let params = req.params
-  //   lat1 = locations[params.homeCity].lat
-  //   lon1 = locations[params.homeCity].lng
-  //   lat2 = locations[params.otherCity].lat
-  //   lon2 = locations[params.otherCity].lng
+  // distance + color stuff
+  app.get('/location/:homeCity-:otherCity', (req, res) => {
+    let params = req.params
+    lat1 = locations[params.homeCity].lat
+    lon1 = locations[params.homeCity].lng
+    lat2 = locations[params.otherCity].lat
+    lon2 = locations[params.otherCity].lng
 
-  //   let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2)
-  //   res.send({
-  //     distance: distanceMeasured,
-  //     rgb: returnRGB(distanceMeasured)
-  //   })
-  // })
+    let distanceMeasured = getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2)
+    res.send({
+      distance: distanceMeasured,
+      rgb: returnRGB(distanceMeasured)
+    })
+  })
   // :type|:input
   app.get('/allDistance/:cityName&:type&:input', (req, res) => {
     let params = req.params;
