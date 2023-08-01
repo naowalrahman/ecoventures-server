@@ -263,7 +263,7 @@ function createUserAccount() {
                     "username": params.username
                 })
 
-                if(user === null) {
+                if (user === null) {
                     await client.db("User").collection("Accounts").insertOne({
                         "username": params.username,
                         "password": params.userpassword
@@ -289,7 +289,10 @@ function getUserAccount() {
                     "password": params.userpassword
                 })
                 if (user !== null) {
-                    res.send("User exists") 
+                    res.send("User found")
+                }
+                else {
+                    res.send("User not found")
                 }
             }
         })()
